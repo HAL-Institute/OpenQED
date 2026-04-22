@@ -3,6 +3,11 @@ import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ url, cookies }) => {
+	const clientId = env.GITHUB_CLIENT_ID;
+	if (!clientId) {
+		return redirect(302, '/login');
+	}
+
 	const state = crypto.randomUUID();
 	cookies.set('oauth_state', state, {
 		path: '/',
@@ -14,7 +19,7 @@ export const GET: RequestHandler = ({ url, cookies }) => {
 
 	const redirectUri = `${url.origin}/api/auth/callback`;
 	const params = new URLSearchParams({
-		client_id: env.GITHUB_CLIENT_ID ?? '',
+		client_id: clientId,
 		redirect_uri: redirectUri,
 		scope: 'read:user',
 		state

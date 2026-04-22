@@ -1,8 +1,10 @@
-import { Octokit } from 'octokit';
 import { env } from '$env/dynamic/private';
 
-function getOctokit() {
-	return new Octokit({ auth: env.GITHUB_BOT_TOKEN });
+async function getOctokit() {
+	const token = env.GITHUB_BOT_TOKEN;
+	if (!token) return null;
+	const { Octokit } = await import('octokit');
+	return new Octokit({ auth: token });
 }
 
 function getOwner() {
@@ -18,8 +20,12 @@ export async function mergeProof(params: {
 	code: string;
 	username: string;
 }): Promise<{ success: boolean; url: string; error?: string }> {
+	const octokit = await getOctokit();
+	if (!octokit) {
+		return { success: false, url: '', error: 'GitHub bot not configured' };
+	}
+
 	try {
-		const octokit = getOctokit();
 		const owner = getOwner();
 		const repo = getRepo();
 		const path = `proofs/${params.problemId}/proof-${Date.now()}.lean`;
@@ -42,11 +48,7 @@ export async function mergeProof(params: {
 			url: data.commit.html_url ?? `https://github.com/${owner}/${repo}`
 		};
 	} catch (err) {
-		return {
-			success: false,
-			url: '',
-			error: (err as Error).message
-		};
+		return { success: false, url: '', error: (err as Error).message };
 	}
 }
 
@@ -55,8 +57,12 @@ export async function openReductionPR(params: {
 	code: string;
 	username: string;
 }): Promise<{ success: boolean; url: string; error?: string }> {
+	const octokit = await getOctokit();
+	if (!octokit) {
+		return { success: false, url: '', error: 'GitHub bot not configured' };
+	}
+
 	try {
-		const octokit = getOctokit();
 		const owner = getOwner();
 		const repo = getRepo();
 
@@ -111,10 +117,6 @@ export async function openReductionPR(params: {
 
 		return { success: true, url: pr.html_url };
 	} catch (err) {
-		return {
-			success: false,
-			url: '',
-			error: (err as Error).message
-		};
+		return { success: false, url: '', error: (err as Error).message };
 	}
 }

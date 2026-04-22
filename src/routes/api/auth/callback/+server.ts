@@ -9,6 +9,13 @@ import {
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
+	const clientId = env.GITHUB_CLIENT_ID;
+	const clientSecret = env.GITHUB_CLIENT_SECRET;
+
+	if (!clientId || !clientSecret) {
+		return redirect(302, '/login');
+	}
+
 	const code = url.searchParams.get('code');
 	const state = url.searchParams.get('state');
 	const storedState = cookies.get('oauth_state');
@@ -26,8 +33,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			Accept: 'application/json'
 		},
 		body: JSON.stringify({
-			client_id: env.GITHUB_CLIENT_ID ?? '',
-			client_secret: env.GITHUB_CLIENT_SECRET ?? '',
+			client_id: clientId,
+			client_secret: clientSecret,
 			code
 		})
 	});
