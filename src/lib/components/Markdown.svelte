@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { Marked } from 'marked';
 	import katex from 'katex';
 	import hljs from 'highlight.js';
+	import lean4 from '$lib/utils/lean-highlight';
+
+	hljs.registerLanguage('lean', lean4);
 
 	let { content }: { content: string } = $props();
 
@@ -17,12 +19,9 @@
 	}
 
 	function renderMarkdown(md: string): string {
-		// Pre-process: handle display math $$...$$ and inline math $...$
-		// Replace display math first
 		let processed = md.replace(/\$\$([\s\S]*?)\$\$/g, (_match, tex) => {
 			return renderMath(tex.trim(), true);
 		});
-		// Replace inline math (but not $$)
 		processed = processed.replace(/(?<!\$)\$(?!\$)((?:[^$\\]|\\.)+?)\$/g, (_match, tex) => {
 			return renderMath(tex.trim(), false);
 		});
@@ -34,7 +33,6 @@
 						const highlighted = hljs.highlight(text, { language: lang }).value;
 						return `<pre class="hljs"><code class="language-${lang}">${highlighted}</code></pre>`;
 					}
-					// Try auto-detect
 					const highlighted = hljs.highlightAuto(text).value;
 					return `<pre class="hljs"><code>${highlighted}</code></pre>`;
 				}
@@ -88,11 +86,12 @@
 		font-style: italic;
 	}
 	.markdown-content :global(a) {
-		color: var(--color-accent);
-		text-decoration: none;
+		color: var(--color-text);
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 	.markdown-content :global(a:hover) {
-		text-decoration: underline;
+		color: var(--color-text-secondary);
 	}
 	.markdown-content :global(ul),
 	.markdown-content :global(ol) {
@@ -111,7 +110,6 @@
 		padding: 1rem;
 		overflow-x: auto;
 		background-color: var(--color-bg-tertiary);
-		border: 1px solid var(--color-border);
 		font-size: 0.8rem;
 		line-height: 1.6;
 	}
@@ -123,10 +121,10 @@
 		padding: 0.125rem 0.375rem;
 		border-radius: 0.25rem;
 		font-size: 0.8rem;
-		color: var(--color-accent);
+		color: var(--color-text);
 	}
 	.markdown-content :global(blockquote) {
-		border-left: 3px solid var(--color-accent);
+		border-left: 3px solid var(--color-border);
 		padding-left: 1rem;
 		margin-bottom: 0.75rem;
 		color: var(--color-text-muted);

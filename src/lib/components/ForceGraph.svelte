@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { buildGraphData, createSimulation } from '$lib/utils/graph';
 	import type { Problem, GraphNode, GraphEdge } from '$lib/utils/types';
+	import { forceCenter } from 'd3-force';
 
 	let {
 		problem,
@@ -17,13 +18,13 @@
 	let nodes = $state<GraphNode[]>([]);
 	let edges = $state<GraphEdge[]>([]);
 	let simulation: ReturnType<typeof createSimulation> | null = null;
-	let animFrame: number | null = null;
+	let rafPending = false;
 
-	// Drag state
 	let dragging = $state<string | null>(null);
+	let selectedId = $state<string | null>(null);
 
-	const centerRadius = 28;
-	const nodeRadius = 18;
+	const centerRadius = 24;
+	const nodeRadius = 16;
 
 	onMount(() => {
 		if (!container) return;
@@ -34,8 +35,14 @@
 
 		const resizeObs = new ResizeObserver((entries) => {
 			for (const entry of entries) {
-				width = entry.contentRect.width;
-				height = Math.max(entry.contentRect.height, 400);
+				const newW = entry.contentRect.width;
+				const newH = Math.max(entry.contentRect.height, 400);
+				width = newW;
+				height = newH;
+				if (simulation) {
+					simulation.force('center', forceCenter(newW / 2, newH / 2));
+					simulation.alpha(0.3).restart();
+				}
 			}
 		});
 		resizeObs.observe(container);
@@ -45,16 +52,29 @@
 		edges = graph.edges;
 
 		simulation = createSimulation(nodes, edges, width, height);
+
+		// Pre-run simulation so nodes appear settled immediately
+		for (let i = 0; i < 300; i++) {
+			simulation.tick();
+		}
+		nodes = [...nodes];
+		edges = [...edges];
+
+		// Continue listening for ticks (drag interactions will restart it)
 		simulation.on('tick', () => {
-			// Trigger reactivity by reassigning
-			nodes = [...nodes];
-			edges = [...edges];
+			if (!rafPending) {
+				rafPending = true;
+				requestAnimationFrame(() => {
+					nodes = [...nodes];
+					edges = [...edges];
+					rafPending = false;
+				});
+			}
 		});
 
 		return () => {
 			resizeObs.disconnect();
 			simulation?.stop();
-			if (animFrame) cancelAnimationFrame(animFrame);
 		};
 	});
 
@@ -73,8 +93,9 @@
 
 	function handlePointerMove(e: PointerEvent) {
 		if (!dragging) return;
-		const svgRect = container.querySelector('svg')?.getBoundingClientRect();
-		if (!svgRect) return;
+		const svgEl = container.querySelector('svg');
+		if (!svgEl) return;
+		const svgRect = svgEl.getBoundingClientRect();
 		const x = e.clientX - svgRect.left;
 		const y = e.clientY - svgRect.top;
 		const node = nodes.find((n) => n.id === dragging);
@@ -96,19 +117,36 @@
 	}
 
 	function handleNodeClick(node: GraphNode) {
-		if (!node.isCenter) {
+		if (node.isCenter) {
+			// Clicking center clears selection
+			selectedId = null;
+		} else {
+			selectedId = node.id;
 			onNodeClick(node.id, node.label);
 		}
 	}
 
 	function getSourceCoords(edge: GraphEdge): { x: number; y: number } {
-		const src = typeof edge.source === 'string' ? nodes.find((n) => n.id === edge.source) : (edge.source as GraphNode);
+		const src =
+			typeof edge.source === 'string'
+				? nodes.find((n) => n.id === edge.source)
+				: (edge.source as GraphNode);
 		return { x: src?.x ?? 0, y: src?.y ?? 0 };
 	}
 
 	function getTargetCoords(edge: GraphEdge): { x: number; y: number } {
-		const tgt = typeof edge.target === 'string' ? nodes.find((n) => n.id === edge.target) : (edge.target as GraphNode);
+		const tgt =
+			typeof edge.target === 'string'
+				? nodes.find((n) => n.id === edge.target)
+				: (edge.target as GraphNode);
 		return { x: tgt?.x ?? 0, y: tgt?.y ?? 0 };
+	}
+
+	function nodeFill(node: GraphNode): string {
+		if (node.id === selectedId) return 'var(--color-text)';
+		if (node.isCenter && !selectedId) return 'var(--color-text)';
+		if (node.isCenter && selectedId) return 'var(--color-bg-tertiary)';
+		return 'var(--color-bg-tertiary)';
 	}
 </script>
 
@@ -121,15 +159,14 @@
 	aria-label="Problem dependency graph"
 >
 	<svg {width} {height} class="w-full h-full">
-		<!-- Arrow marker -->
 		<defs>
 			<marker
 				id="arrowhead"
 				viewBox="0 0 10 7"
 				refX="10"
 				refY="3.5"
-				markerWidth="8"
-				markerHeight="6"
+				markerWidth="7"
+				markerHeight="5"
 				orient="auto"
 			>
 				<polygon points="0 0, 10 3.5, 0 7" fill="var(--color-text-muted)" />
@@ -150,7 +187,7 @@
 				x2={tgt.x - (dx / dist) * targetR}
 				y2={tgt.y - (dy / dist) * targetR}
 				stroke="var(--color-border)"
-				stroke-width="1.5"
+				stroke-width="1"
 				marker-end="url(#arrowhead)"
 			/>
 		{/each}
@@ -158,48 +195,50 @@
 		<!-- Nodes -->
 		{#each nodes as node}
 			{@const r = node.isCenter ? centerRadius : nodeRadius}
+			{@const isSelected = node.id === selectedId}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<g
 				class="cursor-pointer"
 				onpointerdown={(e) => handlePointerDown(e, node)}
 				onclick={() => handleNodeClick(node)}
-				onkeydown={(e) => { if (e.key === 'Enter') handleNodeClick(node); }}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') handleNodeClick(node);
+				}}
 				role="button"
 				tabindex="0"
 				aria-label={node.label}
 			>
-				<!-- Node circle -->
 				<circle
 					cx={node.x ?? 0}
 					cy={node.y ?? 0}
 					{r}
-					fill={node.isCenter ? 'var(--color-accent)' : 'var(--color-surface)'}
-					stroke={node.isCenter ? 'var(--color-accent)' : 'var(--color-border)'}
-					stroke-width={node.isCenter ? 2 : 1.5}
-					class="transition-all duration-100 {!node.isCenter ? 'hover:stroke-[var(--color-accent)] hover:fill-[var(--color-bg-tertiary)]' : ''}"
+					fill={nodeFill(node)}
+					stroke={node.isCenter && !selectedId ? 'none' : 'var(--color-border)'}
+					stroke-width="1"
 				/>
-				<!-- Label -->
 				<text
 					x={node.x ?? 0}
-					y={(node.y ?? 0) + r + 16}
+					y={(node.y ?? 0) + r + 14}
 					text-anchor="middle"
-					fill="var(--color-text-secondary)"
+					fill={isSelected ? 'var(--color-text)' : 'var(--color-text-muted)'}
 					font-size="10"
+					font-weight={isSelected ? '600' : '400'}
+					font-family="var(--font-sans)"
 					class="pointer-events-none select-none"
 				>
-					{node.label.length > 25 ? node.label.slice(0, 22) + '...' : node.label}
+					{node.label.length > 20 ? node.label.slice(0, 18) + '...' : node.label}
 				</text>
-				<!-- Center icon -->
-				{#if node.isCenter}
+				{#if (node.isCenter && !selectedId) || isSelected}
 					<text
 						x={node.x ?? 0}
 						y={(node.y ?? 0) + 4}
 						text-anchor="middle"
 						fill="var(--color-bg)"
-						font-size="14"
-						font-weight="bold"
+						font-size="12"
+						font-weight="600"
+						font-family="var(--font-mono)"
 						class="pointer-events-none select-none"
-					>Q</text>
+					>{node.isCenter ? 'Q' : '?'}</text>
 				{/if}
 			</g>
 		{/each}

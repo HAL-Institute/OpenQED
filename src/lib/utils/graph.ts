@@ -38,11 +38,11 @@ export function createSimulation(
 				.id((d: SimulationNodeDatum) => (d as GraphNode).id)
 				.distance(140)
 		)
-		.force('charge', forceManyBody().strength(-400))
+		.force('charge', forceManyBody().strength(-300))
 		.force('center', forceCenter(width / 2, height / 2))
-		.force('collide', forceCollide().radius(40))
-		.alphaDecay(0.02)
-		.velocityDecay(0.3);
+		.force('collide', forceCollide().radius(35))
+		.alphaDecay(0.03)
+		.velocityDecay(0.35);
 
 	return sim as unknown as Simulation<GraphNode & SimulationNodeDatum, SimulationLinkDatum<GraphNode & SimulationNodeDatum>>;
 }

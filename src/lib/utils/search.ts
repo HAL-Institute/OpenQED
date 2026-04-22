@@ -1,7 +1,7 @@
-import Fuse from 'fuse.js';
+import Fuse, { type IFuseOptions } from 'fuse.js';
 import type { ProblemSummary } from './types';
 
-const fuseOptions: Fuse.IFuseOptions<ProblemSummary> = {
+const fuseOptions: IFuseOptions<ProblemSummary> = {
 	keys: [
 		{ name: 'title', weight: 0.4 },
 		{ name: 'shortDescription', weight: 0.3 },

@@ -4,44 +4,41 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-	--color-bg: #ffffff;
-	--color-bg-secondary: #f8fafc;
-	--color-bg-tertiary: #f1f5f9;
-	--color-surface: #ffffff;
-	--color-border: #e2e8f0;
-	--color-text: #0f172a;
-	--color-text-secondary: #475569;
-	--color-text-muted: #94a3b8;
-	--color-accent: #10b981;
-	--color-accent-hover: #059669;
-	--color-accent-muted: #d1fae5;
-	--color-danger: #ef4444;
-	--color-warning: #f59e0b;
+	--color-bg: #faf7f2;
+	--color-bg-secondary: #f4f1eb;
+	--color-bg-tertiary: #edeae4;
+	--color-surface: #faf7f2;
+	--color-border: #ddd9d3;
+	--color-text: #1a1a1a;
+	--color-text-secondary: #555555;
+	--color-text-muted: #999999;
+	--color-accent: #1a1a1a;
+	--color-accent-hover: #333333;
+	--color-accent-muted: #edeae4;
 
-	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 .dark {
-	--color-bg: #0f1117;
-	--color-bg-secondary: #161922;
-	--color-bg-tertiary: #1e2130;
-	--color-surface: #1a1d2b;
-	--color-border: #2a2d3d;
-	--color-text: #e2e8f0;
-	--color-text-secondary: #94a3b8;
-	--color-text-muted: #64748b;
-	--color-accent: #34d399;
-	--color-accent-hover: #6ee7b7;
-	--color-accent-muted: #064e3b;
-	--color-danger: #f87171;
-	--color-warning: #fbbf24;
+	--color-bg: #141414;
+	--color-bg-secondary: #1a1a1a;
+	--color-bg-tertiary: #222222;
+	--color-surface: #1a1a1a;
+	--color-border: #2a2a2a;
+	--color-text: #d4d4d4;
+	--color-text-secondary: #8a8a8a;
+	--color-text-muted: #525252;
+	--color-accent: #d4d4d4;
+	--color-accent-hover: #e5e5e5;
+	--color-accent-muted: #222222;
 }
 
 html {
 	background-color: var(--color-bg);
 	color: var(--color-text);
 	font-family: var(--font-sans);
+	font-size: 17px;
 }
 
 body {
@@ -82,31 +79,32 @@ body {
 	scrollbar-width: none;
 }
 
-/* Highlight.js theme override for dark/light */
+/* Highlight.js — monochromatic */
 .hljs {
 	background: transparent !important;
 	color: var(--color-text-secondary) !important;
 }
 .hljs-keyword,
 .hljs-built_in {
-	color: var(--color-accent) !important;
+	color: var(--color-text) !important;
+	font-weight: 600;
 }
 .hljs-string {
-	color: #f59e0b !important;
+	color: var(--color-text-secondary) !important;
 }
 .hljs-comment {
 	color: var(--color-text-muted) !important;
 	font-style: italic;
 }
 .hljs-number {
-	color: #818cf8 !important;
+	color: var(--color-text-secondary) !important;
 }
 .hljs-title,
 .hljs-function {
-	color: #60a5fa !important;
+	color: var(--color-text) !important;
 }
 .hljs-type {
-	color: #34d399 !important;
+	color: var(--color-text) !important;
 }
 
 /* Smooth page transitions */
@@ -122,7 +120,7 @@ main {
 /* Select styling */
 select {
 	appearance: none;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: right 8px center;
 	padding-right: 24px;
