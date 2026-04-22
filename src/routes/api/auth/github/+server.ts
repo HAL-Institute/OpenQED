@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { GITHUB_CLIENT_ID } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ url, cookies }) => {
@@ -14,7 +14,7 @@ export const GET: RequestHandler = ({ url, cookies }) => {
 
 	const redirectUri = `${url.origin}/api/auth/callback`;
 	const params = new URLSearchParams({
-		client_id: GITHUB_CLIENT_ID,
+		client_id: env.GITHUB_CLIENT_ID ?? '',
 		redirect_uri: redirectUri,
 		scope: 'read:user',
 		state

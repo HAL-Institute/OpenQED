@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { checkLeanFile, validateClose, validateReduce } from '$lib/server/lean';
 import { mergeProof, openReductionPR } from '$lib/server/github-bot';
-import db from '$lib/server/db';
+import { dbIncrementProofs, dbIncrementReductions } from '$lib/server/db';
 import type { RequestHandler } from './$types';
 
 // Rate limiting: max submissions per user per hour
@@ -94,13 +94,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	// Update user stats
 	if (mode === 'close') {
-		db.prepare(
-			'UPDATE users SET proofs = proofs + 1, contributions = contributions + 1 WHERE id = ?'
-		).run(locals.user.id);
+		dbIncrementProofs(locals.user.id);
 	} else {
-		db.prepare(
-			'UPDATE users SET reductions = reductions + 1, contributions = contributions + 1 WHERE id = ?'
-		).run(locals.user.id);
+		dbIncrementReductions(locals.user.id);
 	}
 
 	return json({

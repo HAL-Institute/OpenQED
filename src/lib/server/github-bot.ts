@@ -1,24 +1,27 @@
 import { Octokit } from 'octokit';
-import {
-	GITHUB_BOT_TOKEN,
-	OPENQED_DATA_OWNER,
-	OPENQED_DATA_REPO
-} from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
-const octokit = new Octokit({ auth: GITHUB_BOT_TOKEN });
-const owner = OPENQED_DATA_OWNER || 'HAL-Institute';
-const repo = OPENQED_DATA_REPO || 'OpenQED-Data';
+function getOctokit() {
+	return new Octokit({ auth: env.GITHUB_BOT_TOKEN });
+}
 
-/**
- * Merge a proof directly into the data repo's main branch.
- * Creates a new file with the proof and commits it.
- */
+function getOwner() {
+	return env.OPENQED_DATA_OWNER || 'HAL-Institute';
+}
+
+function getRepo() {
+	return env.OPENQED_DATA_REPO || 'OpenQED-Data';
+}
+
 export async function mergeProof(params: {
 	problemId: string;
 	code: string;
 	username: string;
 }): Promise<{ success: boolean; url: string; error?: string }> {
 	try {
+		const octokit = getOctokit();
+		const owner = getOwner();
+		const repo = getRepo();
 		const path = `proofs/${params.problemId}/proof-${Date.now()}.lean`;
 		const message = `Close ${params.problemId}: proof by @${params.username}`;
 
@@ -47,17 +50,16 @@ export async function mergeProof(params: {
 	}
 }
 
-/**
- * Open a PR for a reduction submission.
- * Creates a branch, adds the reduction file, and opens a PR for maintainer review.
- */
 export async function openReductionPR(params: {
 	problemId: string;
 	code: string;
 	username: string;
 }): Promise<{ success: boolean; url: string; error?: string }> {
 	try {
-		// Get the default branch's latest SHA
+		const octokit = getOctokit();
+		const owner = getOwner();
+		const repo = getRepo();
+
 		const { data: refData } = await octokit.rest.git.getRef({
 			owner,
 			repo,
@@ -65,7 +67,6 @@ export async function openReductionPR(params: {
 		});
 		const baseSha = refData.object.sha;
 
-		// Create a new branch
 		const branchName = `reduce/${params.problemId}/${params.username}-${Date.now()}`;
 		await octokit.rest.git.createRef({
 			owner,
@@ -74,7 +75,6 @@ export async function openReductionPR(params: {
 			sha: baseSha
 		});
 
-		// Add the reduction file
 		const path = `reductions/${params.problemId}/reduce-${params.username}-${Date.now()}.lean`;
 		await octokit.rest.repos.createOrUpdateFileContents({
 			owner,
@@ -89,7 +89,6 @@ export async function openReductionPR(params: {
 			}
 		});
 
-		// Open a PR
 		const { data: pr } = await octokit.rest.pulls.create({
 			owner,
 			repo,

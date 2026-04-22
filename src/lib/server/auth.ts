@@ -1,5 +1,12 @@
 import type { Cookies } from '@sveltejs/kit';
-import db from './db';
+import {
+	dbCreateSession,
+	dbGetSession,
+	dbDeleteSession,
+	dbUpsertUser,
+	dbGetUserById,
+	dbGetAllUsers
+} from './db';
 
 export interface User {
 	id: string;
@@ -15,31 +22,21 @@ export interface User {
 	reductions: number;
 }
 
-// --- Sessions ---
-
 export function generateSessionId(): string {
 	return crypto.randomUUID();
 }
 
 export function createSession(sessionId: string, userId: string) {
-	db.prepare('INSERT INTO sessions (id, user_id) VALUES (?, ?)').run(sessionId, userId);
+	dbCreateSession(sessionId, userId);
 }
 
 export function getSession(sessionId: string): User | null {
-	return (
-		db
-			.prepare(
-				`SELECT u.* FROM users u JOIN sessions s ON s.user_id = u.id WHERE s.id = ?`
-			)
-			.get(sessionId) as User | undefined
-	) ?? null;
+	return dbGetSession(sessionId);
 }
 
 export function deleteSession(sessionId: string) {
-	db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
+	dbDeleteSession(sessionId);
 }
-
-// --- Users ---
 
 export function upsertUser(data: {
 	githubId: number;
@@ -47,43 +44,15 @@ export function upsertUser(data: {
 	displayName: string;
 	avatarUrl: string;
 }): User {
-	const existing = db
-		.prepare('SELECT * FROM users WHERE github_id = ?')
-		.get(data.githubId) as User | undefined;
-
-	if (existing) {
-		db.prepare(
-			'UPDATE users SET username = ?, display_name = ?, avatar_url = ? WHERE id = ?'
-		).run(data.username, data.displayName, data.avatarUrl, existing.id);
-
-		const created = new Date(existing.created_at).getTime();
-		const daysSince = (Date.now() - created) / (1000 * 60 * 60 * 24);
-		if (!existing.verified && daysSince >= 30) {
-			db.prepare(
-				'UPDATE users SET verified = 1, verification_method = ? WHERE id = ?'
-			).run('time', existing.id);
-		}
-
-		return db.prepare('SELECT * FROM users WHERE id = ?').get(existing.id) as User;
-	}
-
-	const id = crypto.randomUUID();
-	db.prepare(
-		`INSERT INTO users (id, github_id, username, display_name, avatar_url)
-		 VALUES (?, ?, ?, ?, ?)`
-	).run(id, data.githubId, data.username, data.displayName, data.avatarUrl);
-
-	return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as User;
+	return dbUpsertUser(data);
 }
 
 export function getUserById(id: string): User | null {
-	return (db.prepare('SELECT * FROM users WHERE id = ?').get(id) as User | undefined) ?? null;
+	return dbGetUserById(id);
 }
 
 export function getAllUsers(): User[] {
-	return db
-		.prepare('SELECT * FROM users ORDER BY (proofs + reductions) DESC')
-		.all() as User[];
+	return dbGetAllUsers();
 }
 
 export function serializeUser(user: User): UserSession {

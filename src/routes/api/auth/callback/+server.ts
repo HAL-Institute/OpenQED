@@ -1,5 +1,5 @@
-import { redirect, error } from '@sveltejs/kit';
-import { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } from '$env/static/private';
+import { redirect } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import {
 	generateSessionId,
 	createSession,
@@ -26,8 +26,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			Accept: 'application/json'
 		},
 		body: JSON.stringify({
-			client_id: GITHUB_CLIENT_ID,
-			client_secret: GITHUB_CLIENT_SECRET,
+			client_id: env.GITHUB_CLIENT_ID ?? '',
+			client_secret: env.GITHUB_CLIENT_SECRET ?? '',
 			code
 		})
 	});
