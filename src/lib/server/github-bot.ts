@@ -30,7 +30,7 @@ export async function mergeProof(params: {
 			repo,
 			path,
 			message,
-			content: Buffer.from(params.code).toString('base64'),
+			content: btoa(params.code),
 			committer: {
 				name: 'OpenQED Bot',
 				email: 'bot@openqed.org'
@@ -81,7 +81,7 @@ export async function openReductionPR(params: {
 			repo,
 			path,
 			message: `Reduce ${params.problemId}: reduction by @${params.username}`,
-			content: Buffer.from(params.code).toString('base64'),
+			content: btoa(params.code),
 			branch: branchName,
 			committer: {
 				name: 'OpenQED Bot',
